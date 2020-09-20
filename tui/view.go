@@ -409,7 +409,7 @@ func (ui *UIView) Draw() {
 
 	ui.StatusText.SetText(fmt.Sprintf(" %d tasks running since %s\n Total: %d, Successful: %d, Failed: %d, Fail rate: %.1f%%\n Users: %d, RPS: %.1f, Avg duration: %.1f ms\n Status: %s",
 		len(stats.Tasks), stats.StartTime.Format("2006-01-02 15:04:05"), stats.NumTotal, stats.NumSuccessful,
-		stats.NumFailed, failRate, stats.NumUsers, stats.CurrentRPS, stats.AverageDuration, ui.LoadTest.Status))
+		stats.NumFailed, failRate, stats.RunningUsers, stats.CurrentRPS, stats.AverageDuration, ui.LoadTest.Status))
 
 	ui.Table.Clear()
 	if ui.TableView == "tasks" {
