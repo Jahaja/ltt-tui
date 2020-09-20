@@ -14,6 +14,7 @@ func help() {
 	fmt.Fprintln(w, "Terminal-UI for ltt")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Usage:")
+	fmt.Fprintln(w, "Navigate using vi/vim binds or the arrow keys")
 	flag.PrintDefaults()
 }
 
