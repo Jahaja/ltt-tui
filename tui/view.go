@@ -6,6 +6,7 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"log"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,6 +34,7 @@ type UIView struct {
 	LoadTest             *ltt.LoadTest
 	Client               *LTTClient
 	UpdateInterval       int
+	Log                  *log.Logger
 }
 
 func NewUIView(client *LTTClient, updateInterval int) *UIView {
@@ -42,6 +44,7 @@ func NewUIView(client *LTTClient, updateInterval int) *UIView {
 		TableView:            "tasks",
 		TableSortColumnIndex: 0,
 		TableSortDirection:   SortAsc,
+		Log:                  log.New(os.Stdout, "", log.Ldate|log.Ltime),
 	}
 	return ui
 }
@@ -49,7 +52,7 @@ func NewUIView(client *LTTClient, updateInterval int) *UIView {
 func (ui *UIView) Setup() {
 	lt, err := ui.Client.GetLoadTestInfo()
 	if err != nil {
-		log.Fatalf("setup: %s\n", err.Error())
+		ui.Log.Fatalf("setup: %s\n", err.Error())
 	}
 	ui.LoadTest = lt
 
@@ -159,7 +162,7 @@ func (ui *UIView) Setup() {
 	numUsers := ui.LoadTest.Config.NumUsers
 	form.AddButton("Set", func() {
 		if err := ui.Client.SetNumUsers(numUsers); err != nil {
-			log.Fatal(err.Error())
+			ui.Log.Fatal(err.Error())
 		}
 	})
 
@@ -169,10 +172,7 @@ func (ui *UIView) Setup() {
 		SetDoneFunc(func(index int, label string) {
 			if label == "Stop" {
 				if err := ui.Client.Stop(); err != nil {
-					log.Printf("stop request failed: %s\n", err.Error())
-				} else {
-					idx := ui.Form.GetButtonIndex("Stop")
-					ui.Form.GetButton(idx).SetLabel("Start")
+					ui.Log.Printf("stop request failed: %s\n", err.Error())
 				}
 			}
 
@@ -186,22 +186,8 @@ func (ui *UIView) Setup() {
 		return event
 	})
 
-	onOffBtnLabel := "Start"
-	if lt.Status != ltt.StatusStopped {
-		onOffBtnLabel = "Stop"
-	}
-
-	form.AddButton(onOffBtnLabel, func() {
-		btn := ui.Form.GetButton(1)
-		if btn.GetLabel() == "Start" {
-			if err := ui.Client.Start(); err != nil {
-				log.Fatalf("start request failed: %s\n", err.Error())
-			} else {
-				btn.SetLabel("Stop")
-			}
-		} else if btn.GetLabel() == "Stop" {
-			ui.App.SetRoot(confirmStop, true).SetFocus(confirmStop)
-		}
+	form.AddButton("Stop", func() {
+		ui.App.SetRoot(confirmStop, true).SetFocus(confirmStop)
 	})
 
 	form.AddButton("Errors", func() {
@@ -223,7 +209,7 @@ func (ui *UIView) Setup() {
 		SetDoneFunc(func(index int, label string) {
 			if label == "Reset" {
 				if err := ui.Client.Reset(); err != nil {
-					log.Printf("reset request failed: %s\n", err.Error())
+					ui.Log.Printf("reset request failed: %s\n", err.Error())
 				}
 			}
 
@@ -241,6 +227,7 @@ func (ui *UIView) Setup() {
 		ui.App.SetRoot(confirmReset, true).SetFocus(confirmReset)
 	})
 
+	form.SetFieldBackgroundColor(tcell.ColorLightBlue)
 	form.AddInputField("Num users:", strconv.Itoa(ui.LoadTest.Config.NumUsers), 8, tview.InputFieldInteger, func(text string) {
 		numUsers, _ = strconv.Atoi(text)
 	})
@@ -257,6 +244,13 @@ func (ui *UIView) Setup() {
 	app.SetRoot(layout, true)
 	app.EnableMouse(true)
 	app.SetFocus(form)
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Rune() {
+		case 'q':
+			ui.App.Stop()
+		}
+		return event
+	})
 
 	ui.Form = form
 	ui.Layout = layout
@@ -432,7 +426,7 @@ func (ui *UIView) Run() {
 		for {
 			lt, err := ui.Client.GetLoadTestInfo()
 			if err != nil {
-				log.Printf("periodical update: %w", err.Error())
+				ui.Log.Printf("periodical update: %w", err.Error())
 			}
 			ui.LoadTest = lt
 

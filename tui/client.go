@@ -14,19 +14,6 @@ type LTTClient struct {
 	URI string
 }
 
-func (c *LTTClient) Start() error {
-	resp, err := http.Get(fmt.Sprintf("%s/start", c.URI))
-	if err != nil {
-		return fmt.Errorf("failed to start ttl: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("non-ok status code returned: %d", resp.StatusCode)
-	}
-
-	return nil
-}
-
 func (c *LTTClient) SetNumUsers(numUsers int) error {
 	resp, err := http.Get(fmt.Sprintf("%s/set-num-users?num-users=%d", c.URI, numUsers))
 	if err != nil {
@@ -41,16 +28,7 @@ func (c *LTTClient) SetNumUsers(numUsers int) error {
 }
 
 func (c *LTTClient) Stop() error {
-	resp, err := http.Get(fmt.Sprintf("%s/stop", c.URI))
-	if err != nil {
-		return fmt.Errorf("failed to stop ttl: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("non-ok status code returned: %d", resp.StatusCode)
-	}
-
-	return nil
+	return c.SetNumUsers(0)
 }
 
 func (c *LTTClient) Reset() error {
